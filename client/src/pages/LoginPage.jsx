@@ -2,17 +2,30 @@ import Navbar from "../components/Navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { motion } from "framer-motion"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { auth } from "../firebase" // 🔐 Your Firebase setup
+import { useAuth } from "../context/AuthContext"
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { isAuthenticated } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  
+  // Get the redirect path from location state or default to dashboard
+  const from = location.state?.from?.pathname || "/dashboard"
+  
+  // If user is already authenticated, redirect them
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, navigate, from])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -20,7 +33,8 @@ export default function LoginPage() {
     setError("")
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      navigate("/dashboard")
+      // Navigate to the page they were trying to access or dashboard
+      navigate(from, { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -38,13 +52,24 @@ export default function LoginPage() {
 
         <div className="relative z-10 max-w-md w-full bg-white/70 dark:bg-white/10 backdrop-blur-md p-10 rounded-2xl shadow-xl">
           <motion.h2
-            className="text-3xl font-bold text-center mb-6"
+            className="text-3xl font-bold text-center mb-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             Login to <span className="text-cyan-500">HousePilot</span>
           </motion.h2>
+          
+          {location.state?.from && (
+            <motion.div 
+              className="mb-6 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-md text-amber-800 dark:text-amber-200 text-sm"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              You need to be logged in to access this page.
+            </motion.div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-5">
             <Input

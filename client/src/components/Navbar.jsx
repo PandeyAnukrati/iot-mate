@@ -1,11 +1,20 @@
-import { useEffect, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { onAuthStateChanged, signOut } from "firebase/auth"
+import { signOut } from "firebase/auth"
 import { ModeToggle } from "../components/mode-toggle"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
 import MYLOGO from "../assets/MYLOGO.png"
 import darklogo from "../assets/darklogo.png"
-import { auth } from "../firebase" // Make sure this path is correct
+import { auth } from "../firebase"
+import { useAuth } from "../context/AuthContext"
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -17,18 +26,21 @@ const navLinks = [
 export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-    })
-    return () => unsubscribe()
-  }, [])
+  const { currentUser, isAuthenticated } = useAuth()
 
   const handleLogout = async () => {
     await signOut(auth)
     navigate("/login")
+  }
+  
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!currentUser || !currentUser.displayName) return "U"
+    return currentUser.displayName
+      .split(" ")
+      .map(name => name[0])
+      .join("")
+      .toUpperCase()
   }
 
   const isLoginPage = location.pathname === "/login"
@@ -58,22 +70,45 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <ModeToggle />
 
-          {!user && !isLoginPage && (
+          {!isAuthenticated && !isLoginPage && (
             <Button variant="outline" onClick={() => navigate("/login")}>
               Login
             </Button>
           )}
 
-          {!user && isLoginPage && (
+          {!isAuthenticated && isLoginPage && (
             <Button variant="outline" onClick={() => navigate("/register")}>
               Sign Up
             </Button>
           )}
 
-          {user && (
-            <Button variant="destructive" onClick={handleLogout}>
-              Logout
-            </Button>
+          {isAuthenticated && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={currentUser?.photoURL} alt={currentUser?.displayName || "User"} />
+                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{currentUser?.displayName || "User"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{currentUser?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>Dashboard</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/devices")}>Devices</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/history")}>History</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
