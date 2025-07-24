@@ -76,6 +76,7 @@ export default function AddDeviceDialog({ open, onOpenChange, onAdd, selectedHou
   const [fetchingHouses, setFetchingHouses] = useState(false);
   const [selectedBackendHouse, setSelectedBackendHouse] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState("");
+  const [customRoomName, setCustomRoomName] = useState("");
 
   // Fetch houses from backend when dialog opens
   useEffect(() => {
@@ -162,6 +163,7 @@ export default function AddDeviceDialog({ open, onOpenChange, onAdd, selectedHou
     setErrors({});
     setSelectedBackendHouse(null);
     setSelectedRoom("");
+    setCustomRoomName("");
   };
 
   // Handle form submission
@@ -183,8 +185,9 @@ export default function AddDeviceDialog({ open, onOpenChange, onAdd, selectedHou
       newErrors.house = "Please select a house";
     }
     
-    if (!selectedRoom) {
-      newErrors.room = "Please select a room";
+    const finalRoomName = selectedRoom === "Other" ? customRoomName.trim() : selectedRoom;
+    if (!finalRoomName) {
+      newErrors.room = "Please select or enter a room name";
     }
     
     setErrors(newErrors);
@@ -200,9 +203,11 @@ export default function AddDeviceDialog({ open, onOpenChange, onAdd, selectedHou
       
       // Create FormData object for file upload
       const formDataToSend = new FormData();
+      const finalRoomName = selectedRoom === "Other" ? customRoomName.trim() : selectedRoom;
+      
       formDataToSend.append("name", deviceName.trim());
       formDataToSend.append("type", selectedDeviceType.id);
-      formDataToSend.append("room", selectedRoom);
+      formDataToSend.append("room", finalRoomName);
       formDataToSend.append("house", selectedBackendHouse);
       
       // Add optional fields if they exist
@@ -230,6 +235,12 @@ export default function AddDeviceDialog({ open, onOpenChange, onAdd, selectedHou
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Device creation failed:', errorData);
+        
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          throw new Error(`Validation failed: ${errorData.errors.join(', ')}`);
+        }
+        
         throw new Error(errorData.message || "Failed to create device");
       }
       
@@ -370,8 +381,8 @@ export default function AddDeviceDialog({ open, onOpenChange, onAdd, selectedHou
                 <Input
                   className="mt-2"
                   placeholder="Enter room name"
-                  value=""
-                  onChange={(e) => setSelectedRoom(e.target.value)}
+                  value={customRoomName}
+                  onChange={(e) => setCustomRoomName(e.target.value)}
                 />
               )}
               {errors.room && (

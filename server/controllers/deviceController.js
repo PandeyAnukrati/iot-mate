@@ -7,6 +7,16 @@ export const createDevice = async (req, res, next) => {
   try {
     const { name, type, room, house, settings } = req.body;
     
+    console.log('🔧 Creating device with data:', {
+      name,
+      type,
+      room,
+      house,
+      settings,
+      hasImage: !!req.file,
+      userUid: req.user?.uid
+    });
+    
     // Check if house exists
     const houseExists = await House.findById(house);
     if (!houseExists) {
@@ -42,12 +52,27 @@ export const createDevice = async (req, res, next) => {
     
     const device = await Device.create(deviceData);
     
+    console.log('✅ Device created successfully:', device._id);
+    
     res.status(201).json({
       success: true,
       message: 'Device created successfully',
       data: device
     });
   } catch (error) {
+    console.error('❌ Device creation failed:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation Error',
+        errors: validationErrors,
+        details: error.errors
+      });
+    }
+    
     next(error);
   }
 };

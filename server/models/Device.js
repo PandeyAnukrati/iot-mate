@@ -9,7 +9,27 @@ const deviceSchema = new mongoose.Schema({
   type: {
     type: String,
     required: [true, 'Device type is required'],
-    enum: ['Light', 'Thermostat', 'Lock', 'Camera', 'Speaker', 'Sensor', 'Other'],
+    enum: [
+      'Light', 
+      'Fan', 
+      'Air Conditioner', 
+      'Thermostat', 
+      'Camera', 
+      'Speaker', 
+      'TV', 
+      'Router', 
+      'Switch', 
+      'Lock', 
+      'Phone', 
+      'Monitor', 
+      'Refrigerator', 
+      'Washer', 
+      'Lamp', 
+      'Sound', 
+      'Security', 
+      'Sensor', 
+      'Other'
+    ],
     trim: true
   },
   status: {
